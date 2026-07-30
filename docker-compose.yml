@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. Orchestration Engine (n8n)
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: clinical_triage_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE=Asia/Jakarta
+      # Security & Execution limits
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - clinical_net
+
+  # 2. Zero-Trust PII Redaction API (FastAPI)
+  pii_redaction_api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: clinical_pii_gateway
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+    networks:
+      - clinical_net
+
+  # 3. Stateful Cache (Redis) for Deduplication
+  redis_cache:
+    image: redis:7-alpine
+    container_name: clinical_redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - clinical_net
+
+volumes:
+  n8n_data:
+  redis_data:
+
+networks:
+  clinical_net:
+    driver: bridge
