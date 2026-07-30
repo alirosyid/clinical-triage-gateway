@@ -25,4 +25,5 @@ jobs:
         
     - name: Run Zero-Trust PII Tests
       run: |
-        pytest api/test_main.py -v
+        cd api
+        pytest test_main.py -v
