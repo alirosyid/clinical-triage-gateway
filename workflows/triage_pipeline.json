@@ -1,0 +1,116 @@
+{
+  "name": "Clinical Triage & Routing Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "incoming-patient-message",
+        "options": {}
+      },
+      "name": "Webhook Ingestion",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://pii_redaction_api:8000/api/v1/triage",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "request_id",
+              "value": "={{ $json.body.id }}"
+            },
+            {
+              "name": "raw_message",
+              "value": "={{ $json.body.message }}"
+            }
+          ]
+        }
+      },
+      "name": "FastAPI PII Redaction & Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.routing_bucket }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "clinical_occlusal_adjustment",
+              "outputKey": "Occlusal Adjustment"
+            },
+            {
+              "value2": "academic_resident_allocation",
+              "outputKey": "Resident/Koas Allocation"
+            },
+            {
+              "value2": "general_consultation",
+              "outputKey": "General Scheduling"
+            }
+          ]
+        },
+        "fallbackOutput": 3
+      },
+      "name": "Stateful Clinical Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.requires_hitl }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "HITL Fallback Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 100]
+    }
+  ],
+  "connections": {
+    "Webhook Ingestion": {
+      "main": [
+        [
+          {
+            "node": "FastAPI PII Redaction & Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI PII Redaction & Intent": {
+      "main": [
+        [
+          {
+            "node": "Stateful Clinical Router",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HITL Fallback Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
