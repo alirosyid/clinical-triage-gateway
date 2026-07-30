@@ -50,3 +50,17 @@ This system is designed for isolated deployment within a private cloud or local 
    ```bash
    git clone [https://github.com/alirosyid/clinical-triage-gateway.git](https://github.com/alirosyid/clinical-triage-gateway.git)
    cd clinical-triage-gateway
+
+---
+
+graph TD
+    A[Patient Message] -->|Webhook Ingestion| B(n8n Orchestrator)
+    B --> C{FastAPI Zero-Trust Gateway}
+    C -->|Regex Engine| D[Scrub PII / NIK / Phone]
+    D --> E{LLM Intent Classification}
+    E -->|High Confidence| F[Specific Clinical Route]
+    E -->|Low Confidence < 92%| G[Human-In-The-Loop Alert]
+    
+    style C fill:#00a99d,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style G fill:#ff4d4f,stroke:#333,stroke-width:2px,color:#fff
