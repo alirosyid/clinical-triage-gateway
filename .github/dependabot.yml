@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Pindai kerentanan pada library Python di folder /api
+  - package-ecosystem: "pip"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Pindai kerentanan pada image Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Pindai pembaruan keamanan untuk GitHub Actions CI/CD
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
